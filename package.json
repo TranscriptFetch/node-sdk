@@ -1,0 +1,56 @@
+{
+  "name": "transcriptfetch",
+  "version": "0.1.0",
+  "description": "Official Node.js/TypeScript SDK for the TranscriptFetch API: fetch YouTube transcripts, channels, playlists, and search as clean, typed data.",
+  "keywords": [
+    "youtube",
+    "transcript",
+    "captions",
+    "subtitles",
+    "api",
+    "sdk",
+    "rag",
+    "llm",
+    "mcp"
+  ],
+  "license": "MIT",
+  "author": "TranscriptFetch <support@transcriptfetch.com>",
+  "homepage": "https://transcriptfetch.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TranscriptFetch/node-sdk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/TranscriptFetch/node-sdk/issues"
+  },
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "tsup": "^8.0.2",
+    "typescript": "^5.4.5"
+  }
+}
