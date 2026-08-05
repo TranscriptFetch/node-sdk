@@ -4,6 +4,7 @@ import { TranscriptFetch } from "transcriptfetch";
 
 const tf = new TranscriptFetch();
 
+// A TikTok or Instagram URL, or a direct media file URL, works here too.
 const t = await tf.transcripts.video("https://youtu.be/aircAruvnKk");
 console.log(t.title);
 console.log(t.text?.slice(0, 200), "...");

@@ -46,12 +46,25 @@ export function backoffMs(attempt: number, retryAfter?: string | null): number {
 
 type Envelope = Record<string, unknown>;
 
+export interface ParseOptions {
+  /**
+   * Return a 2xx `ok: false` body instead of throwing.
+   *
+   * Only the job-poll endpoint needs this: a job that failed to transcribe is a
+   * reportable state delivered at HTTP 200, not a failed request.
+   */
+  allowFailureEnvelope?: boolean;
+}
+
 /**
  * Return the parsed JSON body, or throw the mapped APIError. Handles both the
  * `{ ok, request_id, data, usage }` envelope and the bare health-check body
  * (which has no `ok` field).
  */
-export async function parseEnvelope(response: Response): Promise<Envelope> {
+export async function parseEnvelope(
+  response: Response,
+  options: ParseOptions = {},
+): Promise<Envelope> {
   let payload: unknown = null;
   try {
     payload = await response.json();
@@ -62,7 +75,9 @@ export async function parseEnvelope(response: Response): Promise<Envelope> {
   const isObj = payload != null && typeof payload === "object";
   const requestId = isObj ? ((payload as Envelope).request_id as string | undefined) ?? null : null;
 
-  const isError = response.status >= 400 || (isObj && (payload as Envelope).ok === false);
+  const failureEnvelope =
+    isObj && (payload as Envelope).ok === false && !options.allowFailureEnvelope;
+  const isError = response.status >= 400 || failureEnvelope;
   if (isError) {
     raiseApiError(
       response.status,

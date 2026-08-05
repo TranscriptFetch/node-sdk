@@ -68,6 +68,34 @@ export interface BatchResponse {
   usage: Usage | null;
 }
 
+/** The account behind the API key, from `/me`. */
+export interface Me {
+  kind: "me";
+  userId: string;
+  /** Remaining credit balance. */
+  credits: number;
+  usage: Usage | null;
+}
+
+/**
+ * The state of an async transcription job.
+ *
+ * A job exists when a request had no captions to read and escalated to audio
+ * transcription. "failed" is a normal outcome here rather than an HTTP error:
+ * the endpoint answers 200 in all three states and `status` carries the meaning.
+ */
+export interface TranscriptJob {
+  kind: "transcript_job";
+  jobId: string;
+  /** processing | completed | failed */
+  status: string;
+  /** The finished transcript. Only present once `status` is "completed". */
+  transcript: Transcript | null;
+  /** Why the job failed. Only present when `status` is "failed". */
+  error: { code: string | null; message: string | null } | null;
+  usage: Usage | null;
+}
+
 /** The public health-check body. */
 export interface Health {
   status: string;
@@ -161,6 +189,42 @@ export function normalizeVideoList(env: Wire): VideoList {
     source: str(pick(d, "source")),
     videos,
     nextCursor: strOrNull(pick(d, "nextCursor", "next_cursor")),
+    usage: normalizeUsage(env),
+  };
+}
+
+/** Parse a `{ data, usage }` account envelope. */
+export function normalizeMe(env: Wire): Me {
+  const d = obj(env.data);
+  return {
+    kind: "me",
+    userId: str(pick(d, "userId", "user_id")),
+    credits: num(pick(d, "credits")),
+    usage: normalizeUsage(env),
+  };
+}
+
+/**
+ * Parse a job-poll envelope.
+ *
+ * Unlike the other endpoints, status / job_id sit at the top level next to
+ * `data` rather than inside it, and a failed job arrives as `ok: false` with an
+ * `error` block at 200.
+ */
+export function normalizeJob(env: Wire): TranscriptJob {
+  const status = str(pick(env, "status"));
+  const rawError = obj(env.error);
+  const hasError = env.error != null && typeof env.error === "object";
+  return {
+    kind: "transcript_job",
+    jobId: str(pick(env, "jobId", "job_id")),
+    status,
+    // Only "completed" carries data; the other states leave it null so callers
+    // cannot mistake an empty placeholder for a real (empty) transcript.
+    transcript: status === "completed" ? normalizeTranscript(env) : null,
+    error: hasError
+      ? { code: strOrNull(pick(rawError, "code")), message: strOrNull(pick(rawError, "message")) }
+      : null,
     usage: normalizeUsage(env),
   };
 }

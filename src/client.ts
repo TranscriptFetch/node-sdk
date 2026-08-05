@@ -2,7 +2,7 @@
 
 import { resolveConfig, type ClientOptions, type ResolvedConfig } from "./config";
 import { APIConnectionError, APITimeoutError } from "./errors";
-import type { Health } from "./models";
+import { normalizeMe, type Health, type Me } from "./models";
 import { Transcripts } from "./resources/transcripts";
 import { backoffMs, buildHeaders, isRetryable, newIdempotencyKey, parseEnvelope } from "./transport";
 
@@ -13,6 +13,8 @@ export interface RequestOptions {
   auth?: boolean;
   /** Auto-generate an Idempotency-Key when one is not supplied. */
   idempotent?: boolean;
+  /** Accept a 2xx `ok: false` body as data rather than raising (job polling). */
+  allowFailureEnvelope?: boolean;
 }
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
@@ -29,7 +31,7 @@ const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout
  * ```
  */
 export class TranscriptFetch {
-  /** The transcripts resource: video, channel, playlist, search, batch. */
+  /** The transcripts resource: video, batch, channel, playlist, search, job. */
   readonly transcripts: Transcripts;
   private readonly config: ResolvedConfig;
 
@@ -78,8 +80,18 @@ export class TranscriptFetch {
         attempt += 1;
         continue;
       }
-      return parseEnvelope(response);
+      return parseEnvelope(response, { allowFailureEnvelope: options.allowFailureEnvelope });
     }
+  }
+
+  /**
+   * Validate the API key and read the account's credit balance. Free.
+   *
+   * Unlike {@link health}, this authenticates, so it is the right credential
+   * test for an integration.
+   */
+  async me(): Promise<Me> {
+    return normalizeMe(await this.request("GET", "/api/v1/me"));
   }
 
   /** Unauthenticated liveness probe. No credits used. */

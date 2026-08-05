@@ -1,15 +1,17 @@
 /**
- * The `transcripts` resource: video / channel / playlist / search / batch,
- * plus auto-paginating async iterators.
+ * The `transcripts` resource: video / batch / channel / playlist / search /
+ * job, plus auto-paginating async iterators.
  */
 
 import type { TranscriptFetch } from "../client";
 import {
   normalizeBatch,
+  normalizeJob,
   normalizeTranscript,
   normalizeVideoList,
   type BatchResponse,
   type Transcript,
+  type TranscriptJob,
   type Video,
   type VideoList,
 } from "../models";
@@ -19,6 +21,7 @@ const CHANNEL = "/api/v1/transcripts/channel";
 const PLAYLIST = "/api/v1/transcripts/playlist";
 const SEARCH = "/api/v1/transcripts/search";
 const BATCH = "/api/v1/transcripts/batch";
+const JOBS = "/api/v1/transcripts/jobs";
 
 /** Options for the paginated list endpoints (channel, playlist, search). */
 export interface ListOptions {
@@ -40,7 +43,13 @@ function listBody(key: string, value: string, options: ListOptions): Record<stri
 export class Transcripts {
   constructor(private readonly client: TranscriptFetch) {}
 
-  /** Fetch a single video's transcript (text + timestamped segments). */
+  /**
+   * Fetch a single video's transcript (text + timestamped segments).
+   *
+   * Accepts a YouTube, TikTok or Instagram URL, a bare YouTube video ID, or a
+   * direct media file URL. The string is passed through to the API untouched,
+   * so newly supported inputs work without an SDK upgrade.
+   */
   async video(video: string, options: { idempotencyKey?: string } = {}): Promise<Transcript> {
     const env = await this.client.request("POST", VIDEO, {
       body: { video },
@@ -80,7 +89,7 @@ export class Transcripts {
     return normalizeVideoList(env);
   }
 
-  /** Fetch up to 50 transcripts in one call. */
+  /** Fetch up to 50 transcripts in one call. Same accepted inputs as {@link video}. */
   async batch(videoIds: string[], options: { idempotencyKey?: string } = {}): Promise<BatchResponse> {
     const env = await this.client.request("POST", BATCH, {
       body: { videoIds },
@@ -88,6 +97,22 @@ export class Transcripts {
       idempotencyKey: options.idempotencyKey,
     });
     return normalizeBatch(env);
+  }
+
+  /**
+   * Poll an async transcription job by id. Free: credits are charged once, on
+   * delivery.
+   *
+   * A job is created when a video has no captions and the API escalates to
+   * transcribing its audio. A failed job comes back as a `TranscriptJob` with
+   * status "failed" rather than as a thrown error, because the request itself
+   * succeeded.
+   */
+  async job(jobId: string): Promise<TranscriptJob> {
+    const env = await this.client.request("GET", `${JOBS}/${encodeURIComponent(jobId)}`, {
+      allowFailureEnvelope: true,
+    });
+    return normalizeJob(env);
   }
 
   // ── Auto-paginating iterators ───────────────────────────────────────────────
