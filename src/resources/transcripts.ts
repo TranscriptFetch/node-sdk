@@ -44,11 +44,17 @@ export class Transcripts {
   constructor(private readonly client: TranscriptFetch) {}
 
   /**
-   * Fetch a single video's transcript (text + timestamped segments).
+   * Fetch a single transcript (text + timestamped segments).
    *
-   * Accepts a YouTube, TikTok or Instagram URL, a bare YouTube video ID, or a
-   * direct media file URL. The string is passed through to the API untouched,
-   * so newly supported inputs work without an SDK upgrade.
+   * Accepts a YouTube, TikTok or Instagram URL, a bare YouTube video ID, a
+   * direct media file URL, or a podcast link (Spotify, Apple Podcasts, or an
+   * RSS feed), which is resolved to that episode's audio and comes back with a
+   * `podcast` block. The string is passed through to the API untouched, so
+   * newly supported inputs work without an SDK upgrade.
+   *
+   * A source with no captions is transcribed from its audio, and the result
+   * comes back as a job: `status` is "processing" and `jobId` is set, with no
+   * text yet. Poll {@link job} with that id until it reports "completed".
    */
   async video(video: string, options: { idempotencyKey?: string } = {}): Promise<Transcript> {
     const env = await this.client.request("POST", VIDEO, {
@@ -103,10 +109,18 @@ export class Transcripts {
    * Poll an async transcription job by id. Free: credits are charged once, on
    * delivery.
    *
-   * A job is created when a video has no captions and the API escalates to
-   * transcribing its audio. A failed job comes back as a `TranscriptJob` with
-   * status "failed" rather than as a thrown error, because the request itself
-   * succeeded.
+   * Returns the same shape {@link video} does, plus an `error` block. A failed
+   * job comes back as status "failed" rather than as a thrown error, because
+   * the request itself succeeded.
+   *
+   * ```ts
+   * let t = await tf.transcripts.video("https://example.com/episode.mp3");
+   * while (t.status === "processing") {
+   *   await new Promise((r) => setTimeout(r, 5000));
+   *   t = await tf.transcripts.job(t.jobId!);
+   * }
+   * console.log(t.text);
+   * ```
    */
   async job(jobId: string): Promise<TranscriptJob> {
     const env = await this.client.request("GET", `${JOBS}/${encodeURIComponent(jobId)}`, {

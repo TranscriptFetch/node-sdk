@@ -2,7 +2,7 @@
 
 The official Node.js / TypeScript client for the [TranscriptFetch API](https://transcriptfetch.com). Fetch transcripts as clean, typed data, with built-in retries, idempotency, and a typed error hierarchy.
 
-- Transcripts from **YouTube, TikTok, Instagram, and direct media file URLs**
+- Transcripts from **YouTube, TikTok, Instagram, podcasts, and direct media file URLs**
 - YouTube channel, playlist, and search listing
 - Typed responses (full TypeScript types, ESM + CommonJS)
 - Automatic retries on 429 and 5xx with backoff
@@ -45,13 +45,45 @@ Keep your key server-side. Never ship it to the browser.
 | YouTube URL or bare video ID | `https://youtu.be/aircAruvnKk`, `aircAruvnKk` |
 | TikTok video URL | `https://www.tiktok.com/@user/video/7137723462233555205` |
 | Instagram post or reel URL | `https://www.instagram.com/reel/Cxyz.../` |
+| Podcast episode or feed | `https://open.spotify.com/episode/...`, `https://podcasts.apple.com/...`, `https://feeds.example.com/show.xml` |
 | Direct media file URL | `https://example.com/talk.mp3` |
 
 The string is sent to the API as-is, so the SDK never has to be upgraded for the
 API to accept a new input.
 
+A podcast link is resolved to that episode's audio automatically, and the
+response carries a `podcast` block naming the show and episode:
+
+```ts
+const t = await tf.transcripts.video("https://open.spotify.com/episode/...");
+console.log(t.podcast?.show, "-", t.podcast?.episode);
+```
+
 `channel()`, `playlist()`, and `search()` are YouTube-only concepts and take
 YouTube handles, IDs, and queries.
+
+## Sources without captions
+
+When a source has no captions the API transcribes its audio, which takes longer
+than one request. You get a transcript back with `status: "processing"` and a
+`jobId` instead of text. Poll it:
+
+```ts
+let t = await tf.transcripts.video("https://example.com/episode.mp3");
+
+while (t.status === "processing") {
+  await new Promise((r) => setTimeout(r, 5_000));
+  // Polling is free: credits are charged once, on delivery.
+  const polled = await tf.transcripts.job(t.jobId!);
+  if (polled.status === "failed") throw new Error(polled.error?.message ?? "job failed");
+  t = polled;
+}
+
+console.log(t.text);
+```
+
+Everything else answers in one call, so `status` is null there and no polling is
+needed.
 
 ## Endpoints
 

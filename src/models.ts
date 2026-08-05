@@ -21,14 +21,52 @@ export interface Segment {
   text: string;
 }
 
-/** A single video's transcript. */
+/**
+ * The show and episode behind a podcast transcript.
+ *
+ * Present only when the input resolved to a podcast episode. A job polled back
+ * later carries the short form (show + episode); the rest is filled in on the
+ * response that did the resolving, so treat every field as optional.
+ */
+export interface PodcastMeta {
+  show: string | null;
+  episode: string | null;
+  publishedAt: string | null;
+  feedUrl: string | null;
+  audioUrl: string | null;
+  /** How the link was matched to a feed, e.g. "rss" or "itunes_search". */
+  resolvedVia: string | null;
+}
+
+/**
+ * A single video's transcript, from any supported source.
+ *
+ * This also covers the "not ready yet" case. A source with no captions is
+ * transcribed from its audio, and the API answers 202 with `kind:
+ * "transcript_job"` and no text. `kind` is therefore a plain string rather than
+ * a literal: pinning it would make a perfectly good 202 look like a wrong
+ * shape. When `status` is "processing", pass `jobId` to `transcripts.job()`
+ * until it reports "completed".
+ */
 export interface Transcript {
-  kind: "transcript";
+  /** transcript | transcript_job */
+  kind: string;
   videoId: string;
+  /** Source platform: youtube | tiktok | instagram | podcast | file. */
+  platform: string | null;
   title: string | null;
   text: string | null;
   segments: Segment[];
+  /** Set only when the input resolved to a podcast episode. */
+  podcast: PodcastMeta | null;
   usage: Usage | null;
+  // Envelope-level fields, lifted onto the model so an async job round-trips as
+  // one object (the API returns them beside `data`, not inside it).
+  /** processing | completed | failed. Only set on async transcription jobs. */
+  status: string | null;
+  jobId: string | null;
+  /** Path to poll for the finished transcript. */
+  pollUrl: string | null;
 }
 
 /** A video reference from a channel/playlist/search list (metadata only). */
@@ -78,22 +116,18 @@ export interface Me {
 }
 
 /**
- * The state of an async transcription job.
+ * A polled transcription job: a {@link Transcript} plus why it failed, if it did.
  *
- * A job exists when a request had no captions to read and escalated to audio
- * transcription. "failed" is a normal outcome here rather than an HTTP error:
- * the endpoint answers 200 in all three states and `status` carries the meaning.
+ * It extends Transcript rather than wrapping one so the poll loop reads the
+ * same whether the transcript arrived synchronously or via a job, and so the
+ * completed job can be handed to anything that takes a Transcript.
+ *
+ * "failed" is a normal outcome here rather than an HTTP error: the endpoint
+ * answers 200 in all three states and `status` carries the meaning.
  */
-export interface TranscriptJob {
-  kind: "transcript_job";
-  jobId: string;
-  /** processing | completed | failed */
-  status: string;
-  /** The finished transcript. Only present once `status` is "completed". */
-  transcript: Transcript | null;
+export interface TranscriptJob extends Transcript {
   /** Why the job failed. Only present when `status` is "failed". */
   error: { code: string | null; message: string | null } | null;
-  usage: Usage | null;
 }
 
 /** The public health-check body. */
@@ -167,16 +201,41 @@ function normalizeVideo(raw: unknown): Video {
   };
 }
 
-/** Parse a `{ data, usage }` transcript envelope. */
+function normalizePodcast(raw: unknown): PodcastMeta | null {
+  if (!raw || typeof raw !== "object") return null;
+  const p = raw as Wire;
+  return {
+    show: strOrNull(pick(p, "show")),
+    episode: strOrNull(pick(p, "episode")),
+    publishedAt: strOrNull(pick(p, "publishedAt", "published_at")),
+    feedUrl: strOrNull(pick(p, "feedUrl", "feed_url")),
+    audioUrl: strOrNull(pick(p, "audioUrl", "audio_url")),
+    resolvedVia: strOrNull(pick(p, "resolvedVia", "resolved_via")),
+  };
+}
+
+/**
+ * Parse a `{ data, usage }` transcript envelope.
+ *
+ * `data` is null while an async job is still processing, which `obj()` already
+ * absorbs, so a 202 parses into a Transcript carrying only its job fields.
+ */
 export function normalizeTranscript(env: Wire): Transcript {
   const d = obj(env.data);
   return {
-    kind: "transcript",
+    // Trust the wire kind: a 202 says "transcript_job", a finished one says
+    // "transcript".
+    kind: str(pick(d, "kind")) || "transcript",
     videoId: str(pick(d, "videoId", "video_id")),
+    platform: strOrNull(pick(d, "platform")),
     title: strOrNull(pick(d, "title")),
     text: strOrNull(pick(d, "text")),
     segments: normalizeSegments(d.segments),
+    podcast: normalizePodcast(d.podcast),
     usage: normalizeUsage(env),
+    status: strOrNull(pick(env, "status")),
+    jobId: strOrNull(pick(env, "jobId", "job_id")),
+    pollUrl: strOrNull(pick(env, "pollUrl", "poll_url")),
   };
 }
 
@@ -205,27 +264,17 @@ export function normalizeMe(env: Wire): Me {
 }
 
 /**
- * Parse a job-poll envelope.
- *
- * Unlike the other endpoints, status / job_id sit at the top level next to
- * `data` rather than inside it, and a failed job arrives as `ok: false` with an
- * `error` block at 200.
+ * Parse a job-poll envelope: a transcript envelope that may also carry an
+ * `error` block, which a failed job delivers at HTTP 200 alongside `ok: false`.
  */
 export function normalizeJob(env: Wire): TranscriptJob {
-  const status = str(pick(env, "status"));
   const rawError = obj(env.error);
   const hasError = env.error != null && typeof env.error === "object";
   return {
-    kind: "transcript_job",
-    jobId: str(pick(env, "jobId", "job_id")),
-    status,
-    // Only "completed" carries data; the other states leave it null so callers
-    // cannot mistake an empty placeholder for a real (empty) transcript.
-    transcript: status === "completed" ? normalizeTranscript(env) : null,
+    ...normalizeTranscript(env),
     error: hasError
       ? { code: strOrNull(pick(rawError, "code")), message: strOrNull(pick(rawError, "message")) }
       : null,
-    usage: normalizeUsage(env),
   };
 }
 

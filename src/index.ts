@@ -1,8 +1,9 @@
 /**
  * Official Node.js / TypeScript SDK for the TranscriptFetch API.
  *
- * Transcribes YouTube, TikTok and Instagram videos as well as direct media
- * file URLs; channel, playlist and search listing are YouTube only.
+ * Transcribes YouTube, TikTok and Instagram videos, direct media file URLs,
+ * and podcast episodes (Spotify, Apple Podcasts, or an RSS feed); channel,
+ * playlist and search listing are YouTube only.
  *
  * ```ts
  * import { TranscriptFetch } from "transcriptfetch";
@@ -36,6 +37,7 @@ export type {
   Usage,
   Segment,
   Transcript,
+  PodcastMeta,
   Video,
   VideoList,
   BatchResult,
