@@ -66,7 +66,12 @@ export class RateLimitError extends APIError {
   }
 }
 
-/** 502/503: the upstream transcript service was unreachable. Safe to retry. */
+/**
+ * 502/503: the upstream fetch failed - the transcript service was unreachable,
+ * or the source platform blocked the fetch (reason "upstream_error"). Safe to
+ * retry with backoff. Platform blocks never surface as 429: a
+ * {@link RateLimitError} always means your own key's limit.
+ */
 export class UpstreamUnavailableError extends APIError {}
 /** 500: unexpected server error. */
 export class InternalServerError extends APIError {}

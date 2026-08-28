@@ -3,6 +3,34 @@
 All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/).
 
+## [1.1.0]
+
+Batch audio fallback, matching the API change: entries with no caption track
+are now transcribed from their audio by default instead of failing.
+
+Added
+
+- `mode` option on `transcripts.batch()`: `"auto"` (the default) reads captions
+  and transcribes the audio when there are none; `"captions"` keeps the old
+  behaviour, failing captionless entries as `no_transcript`. (`"audio"` is not
+  accepted on batch.)
+- `BatchResult.jobId` and `BatchResult.pollUrl` - set when an entry escalated
+  to audio transcription. Such entries report outcome `"processing"`, cost
+  nothing on that call, and are charged on delivery at the audio rate; re-send
+  the batch once finished, or poll `transcripts.job(jobId)`.
+- `BatchResult.reason` and `BatchResult.message` - the structured failure
+  reason and its human-readable explanation, which the wire has always
+  carried but the model dropped.
+- Optional `Segment.speaker`, the podcast speaker-diarization id. Present only
+  on diarized podcast segments; previously the normalizer silently discarded it.
+
+Removed
+
+- `BatchResult.cached`. The API stopped sending the field (whether a result
+  came from cache is an internal cost detail, not part of the contract), so
+  the SDK was reporting a hardcoded `false` - worse than absent. Strictly a
+  type-level removal; no runtime behaviour changes.
+
 ## [1.0.0]
 
 First stable release. The public docs promise the SDKs follow semver, and a 0.x

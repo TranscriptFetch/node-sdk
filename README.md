@@ -85,11 +85,22 @@ console.log(t.text);
 Everything else answers in one call, so `status` is null there and no polling is
 needed.
 
+Batch works the same way: an entry with no captions comes back as outcome
+`"processing"` with a `jobId`, costs nothing on that call, and is charged on
+delivery at the audio rate. Re-send the same batch once it has finished (the
+text then returns normally), or poll the job - polling is optional. Pass
+`mode: "captions"` to skip the audio fallback and have captionless entries fail
+as `no_transcript` instead:
+
+```ts
+const res = await tf.transcripts.batch(videoIds, { mode: "captions" });
+```
+
 ## Endpoints
 
 ```ts
 await tf.transcripts.video(video);                     // single transcript (text + segments)
-await tf.transcripts.batch(videoIds);                  // up to 50 transcripts in one call
+await tf.transcripts.batch(videoIds, { mode });        // up to 50 transcripts in one call
 await tf.transcripts.channel(channel, { limit, cursor });   // a YouTube channel's videos (metadata)
 await tf.transcripts.playlist(playlist, { limit, cursor }); // a YouTube playlist's videos
 await tf.transcripts.search(query, { limit, cursor });      // search YouTube
@@ -136,6 +147,10 @@ try {
 ```
 
 The full hierarchy: `AuthenticationError`, `InvalidRequestError`, `InsufficientCreditsError`, `IdempotencyConflictError`, `RateLimitError`, `UpstreamUnavailableError`, `InternalServerError` (all extend `APIError`), plus `APIConnectionError` and `APITimeoutError` for transport failures. All extend `TranscriptFetchError`.
+
+A source platform blocking the upstream fetch answers 503
+(`UpstreamUnavailableError`), never 429: a `RateLimitError` always means your
+own key's limit. Both are retried automatically with backoff.
 
 ## Configuration
 

@@ -19,6 +19,12 @@ export interface Segment {
   start: number;
   duration: number;
   text: string;
+  /**
+   * Speaker id (0, 1, ...) from podcast speaker diarization. Present only on
+   * diarized podcast segments; ids are hints from voice separation, not named
+   * identification. Never set on other sources.
+   */
+  speaker?: number;
 }
 
 /**
@@ -87,15 +93,29 @@ export interface VideoList {
   usage: Usage | null;
 }
 
-/** One video's result inside a batch response. */
+/**
+ * One video's result inside a batch response.
+ *
+ * An entry with no caption track is transcribed from its audio: it comes back
+ * as outcome "processing" with a `jobId`, costs nothing on this call, and is
+ * charged on delivery at the audio rate. Re-send the same batch once it has
+ * finished (the text then returns normally), or poll `transcripts.job(jobId)`.
+ */
 export interface BatchResult {
   videoId: string;
-  /** ok | no_transcript | blocked | error | null */
+  /** ok | no_transcript | error | processing | null */
   outcome: string | null;
+  /** Structured failure reason (no_captions, upstream_error, ...); null on success. */
+  reason: string | null;
+  /** Human-readable explanation of the failure; null on success. */
+  message: string | null;
+  /** Set when outcome is "processing": the async transcription job to poll. */
+  jobId: string | null;
+  /** Path to poll for the finished transcript. Set alongside `jobId`. */
+  pollUrl: string | null;
   title: string | null;
   text: string | null;
   segments: Segment[] | null;
-  cached: boolean;
   bytes: number;
 }
 
@@ -172,7 +192,13 @@ function num(value: unknown, fallback = 0): number {
 
 function normalizeSegment(raw: unknown): Segment {
   const s = obj(raw);
-  return { start: num(s.start), duration: num(s.duration), text: str(s.text) };
+  const speaker = numOrNull(s.speaker);
+  return {
+    start: num(s.start),
+    duration: num(s.duration),
+    text: str(s.text),
+    ...(speaker != null ? { speaker } : {}),
+  };
 }
 
 function normalizeSegments(raw: unknown): Segment[] {
@@ -288,10 +314,13 @@ export function normalizeBatch(env: Wire): BatchResponse {
     return {
       videoId: str(pick(r, "videoId", "video_id")),
       outcome: strOrNull(pick(r, "outcome")),
+      reason: strOrNull(pick(r, "reason")),
+      message: strOrNull(pick(r, "message")),
+      jobId: strOrNull(pick(r, "jobId", "job_id")),
+      pollUrl: strOrNull(pick(r, "pollUrl", "poll_url")),
       title: strOrNull(pick(r, "title")),
       text: strOrNull(pick(r, "text")),
       segments: Array.isArray(segments) ? normalizeSegments(segments) : null,
-      cached: pick(r, "cached") === true,
       bytes: num(pick(r, "bytes")),
     };
   });

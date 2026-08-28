@@ -95,10 +95,28 @@ export class Transcripts {
     return normalizeVideoList(env);
   }
 
-  /** Fetch up to 50 transcripts in one call. Same accepted inputs as {@link video}. */
-  async batch(videoIds: string[], options: { idempotencyKey?: string } = {}): Promise<BatchResponse> {
+  /**
+   * Fetch up to 50 transcripts in one call. Same accepted inputs as
+   * {@link video}. Charges 1 credit per successfully fetched transcript;
+   * failed entries are free.
+   *
+   * Entries with no caption track are transcribed from their audio by default:
+   * those come back as outcome "processing" with a `jobId`, cost nothing on
+   * this call, and are charged on delivery at the audio rate. Re-send the same
+   * batch once they have finished (the text then returns normally), or poll
+   * {@link job} - polling is optional. Pass `mode: "captions"` to keep the old
+   * behaviour and have captionless entries fail as no_transcript instead.
+   * ("audio" is not accepted on batch - use {@link video} per source to force
+   * transcription.)
+   */
+  async batch(
+    videoIds: string[],
+    options: { mode?: "auto" | "captions"; idempotencyKey?: string } = {},
+  ): Promise<BatchResponse> {
+    const body: Record<string, unknown> = { videoIds };
+    if (options.mode != null) body["mode"] = options.mode;
     const env = await this.client.request("POST", BATCH, {
-      body: { videoIds },
+      body,
       idempotent: true,
       idempotencyKey: options.idempotencyKey,
     });

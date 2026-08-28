@@ -1,6 +1,6 @@
 {
   "name": "transcriptfetch",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Official Node.js/TypeScript SDK for the TranscriptFetch API: transcripts for YouTube, TikTok, Instagram and direct media URLs, plus YouTube channel, playlist and search listing, as clean typed data.",
   "keywords": [
     "youtube",
