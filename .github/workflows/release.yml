@@ -11,6 +11,7 @@ name: Release
 # version bump, tag it v<version>, push the tag.
 
 on:
+  workflow_dispatch:
   push:
     tags: ["v*"]
 
@@ -25,7 +26,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-          registry-url: "https://registry.npmjs.org"
       # Trusted publishing needs npm 11.5.1+; the runner's bundled npm may lag.
       - run: npm install -g npm@latest
       - run: npm ci
