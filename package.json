@@ -1,23 +1,29 @@
 {
   "name": "transcriptfetch",
-  "version": "1.1.0",
-  "description": "Official Node.js/TypeScript SDK for the TranscriptFetch API: transcripts for YouTube, TikTok, Instagram and direct media URLs, plus YouTube channel, playlist and search listing, as clean typed data.",
+  "version": "1.1.1",
+  "description": "Official Node.js/TypeScript SDK for the TranscriptFetch API: transcripts for YouTube, TikTok, Instagram, podcasts and direct media URLs - captions in about a second, automatic AI speech-to-text when none exist - plus YouTube search, channel and playlist listing, as clean typed data.",
   "keywords": [
     "youtube",
+    "youtube-transcript",
     "tiktok",
     "instagram",
+    "podcast",
     "transcript",
+    "transcription",
     "captions",
     "subtitles",
+    "speech-to-text",
     "api",
     "sdk",
+    "typescript",
     "rag",
     "llm",
+    "ai-agents",
     "mcp"
   ],
   "license": "MIT",
   "author": "TranscriptFetch <support@transcriptfetch.com>",
-  "homepage": "https://transcriptfetch.com",
+  "homepage": "https://transcriptfetch.com/docs/node",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/TranscriptFetch/node-sdk.git"

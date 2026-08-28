@@ -3,6 +3,12 @@
 All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/).
 
+## [1.1.1] - 2026-08-28
+
+### Changed
+
+- npm listing refresh: description covers podcasts + AI speech-to-text fallback, richer keywords, homepage points at the Node docs. No code changes.
+
 ## [1.1.0]
 
 Batch audio fallback, matching the API change: entries with no caption track
