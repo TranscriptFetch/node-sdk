@@ -90,7 +90,8 @@ Batch works the same way: an entry with no captions comes back as outcome
 delivery at the audio rate. Re-send the same batch once it has finished (the
 text then returns normally), or poll the job - polling is optional. Pass
 `mode: "captions"` to skip the audio fallback and have captionless entries fail
-as `no_transcript` instead:
+as outcome `"error"` with `error.code === "no_captions"` (and
+`error.retryWith` naming the audio mode) instead:
 
 ```ts
 const res = await tf.transcripts.batch(videoIds, { mode: "captions" });
@@ -130,6 +131,7 @@ import {
   TranscriptFetch,
   InsufficientCreditsError,
   RateLimitError,
+  UnprocessableInputError,
   APIError,
 } from "transcriptfetch";
 
@@ -140,8 +142,11 @@ try {
     // 402: top up at /pricing
   } else if (err instanceof RateLimitError) {
     console.log("retry after", err.retryAfter); // 429
+  } else if (err instanceof UnprocessableInputError && err.retryWith) {
+    // A different request would work, e.g. { mode: "audio" } for a captionless video.
   } else if (err instanceof APIError) {
-    console.log(err.status, err.code, err.requestId);
+    // err.number's thousands digit is the family; err.retryable says whether to back off and retry.
+    console.log(err.status, err.code, err.number, err.docs, err.requestId);
   }
 }
 ```

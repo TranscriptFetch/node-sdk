@@ -61,6 +61,8 @@ export interface Transcript {
   /** Source platform: youtube | tiktok | instagram | podcast | file. */
   platform: string | null;
   title: string | null;
+  /** Where the words came from: "captions" or "audio" (AI transcription). Null on a 202. */
+  source: "captions" | "audio" | null;
   text: string | null;
   segments: Segment[];
   /** Set only when the input resolved to a podcast episode. */
@@ -103,20 +105,35 @@ export interface VideoList {
  */
 export interface BatchResult {
   videoId: string;
-  /** ok | no_transcript | error | processing | null */
-  outcome: string | null;
-  /** Structured failure reason (no_captions, upstream_error, ...); null on success. */
-  reason: string | null;
-  /** Human-readable explanation of the failure; null on success. */
-  message: string | null;
+  /** ok | processing | error */
+  outcome: "ok" | "processing" | "error";
+  /** The failure, on outcome "error": the same block a request-level error carries. */
+  error: ApiErrorBlock | null;
   /** Set when outcome is "processing": the async transcription job to poll. */
   jobId: string | null;
   /** Path to poll for the finished transcript. Set alongside `jobId`. */
   pollUrl: string | null;
   title: string | null;
+  /** "captions" or "audio" on outcome "ok". */
+  source: "captions" | "audio" | null;
   text: string | null;
   segments: Segment[] | null;
   bytes: number;
+}
+
+/**
+ * The API's error block, as it appears on a failed batch entry or a failed
+ * job. Request-level failures throw {@link APIError} with the same fields.
+ */
+export interface ApiErrorBlock {
+  code: string;
+  /** Stable numeric code; the thousands digit is the family (5xxx = retry). */
+  number: number | null;
+  message: string;
+  docs: string | null;
+  /** The request change that would succeed, e.g. `{ mode: "audio" }`. */
+  retryWith: Record<string, unknown> | null;
+  details: Record<string, unknown> | null;
 }
 
 /** Result of a batch fetch. */
@@ -147,7 +164,7 @@ export interface Me {
  */
 export interface TranscriptJob extends Transcript {
   /** Why the job failed. Only present when `status` is "failed". */
-  error: { code: string | null; message: string | null } | null;
+  error: ApiErrorBlock | null;
 }
 
 /** The public health-check body. */
@@ -255,6 +272,7 @@ export function normalizeTranscript(env: Wire): Transcript {
     videoId: str(pick(d, "videoId", "video_id")),
     platform: strOrNull(pick(d, "platform")),
     title: strOrNull(pick(d, "title")),
+    source: normalizeSource(pick(d, "source")),
     text: strOrNull(pick(d, "text")),
     segments: normalizeSegments(d.segments),
     podcast: normalizePodcast(d.podcast),
@@ -294,13 +312,27 @@ export function normalizeMe(env: Wire): Me {
  * `error` block, which a failed job delivers at HTTP 200 alongside `ok: false`.
  */
 export function normalizeJob(env: Wire): TranscriptJob {
-  const rawError = obj(env.error);
-  const hasError = env.error != null && typeof env.error === "object";
+  return { ...normalizeTranscript(env), error: normalizeErrorBlock(env.error) };
+}
+
+function normalizeSource(raw: unknown): "captions" | "audio" | null {
+  return raw === "captions" || raw === "audio" ? raw : null;
+}
+
+/** The API's error block (batch entries, failed jobs); null when absent. */
+export function normalizeErrorBlock(raw: unknown): ApiErrorBlock | null {
+  if (raw == null || typeof raw !== "object") return null;
+  const e = obj(raw);
+  const number = pick(e, "number");
+  const retryWith = pick(e, "retryWith", "retry_with");
+  const details = pick(e, "details");
   return {
-    ...normalizeTranscript(env),
-    error: hasError
-      ? { code: strOrNull(pick(rawError, "code")), message: strOrNull(pick(rawError, "message")) }
-      : null,
+    code: str(pick(e, "code")),
+    number: typeof number === "number" ? number : null,
+    message: str(pick(e, "message")),
+    docs: strOrNull(pick(e, "docs")),
+    retryWith: retryWith && typeof retryWith === "object" ? (retryWith as Record<string, unknown>) : null,
+    details: details && typeof details === "object" ? (details as Record<string, unknown>) : null,
   };
 }
 
@@ -311,14 +343,15 @@ export function normalizeBatch(env: Wire): BatchResponse {
   const results: BatchResult[] = rawResults.map((raw) => {
     const r = obj(raw);
     const segments = r.segments;
+    const outcome = str(pick(r, "outcome"));
     return {
       videoId: str(pick(r, "videoId", "video_id")),
-      outcome: strOrNull(pick(r, "outcome")),
-      reason: strOrNull(pick(r, "reason")),
-      message: strOrNull(pick(r, "message")),
+      outcome: outcome === "ok" || outcome === "processing" ? outcome : "error",
+      error: normalizeErrorBlock(r.error),
       jobId: strOrNull(pick(r, "jobId", "job_id")),
       pollUrl: strOrNull(pick(r, "pollUrl", "poll_url")),
       title: strOrNull(pick(r, "title")),
+      source: normalizeSource(pick(r, "source")),
       text: strOrNull(pick(r, "text")),
       segments: Array.isArray(segments) ? normalizeSegments(segments) : null,
       bytes: num(pick(r, "bytes")),

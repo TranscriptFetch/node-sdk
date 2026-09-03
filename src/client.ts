@@ -91,11 +91,11 @@ export class TranscriptFetch {
    * test for an integration.
    */
   async me(): Promise<Me> {
-    return normalizeMe(await this.request("GET", "/api/v1/me"));
+    return normalizeMe(await this.request("GET", "/api/v2/me"));
   }
 
   /** Unauthenticated liveness probe. No credits used. */
   async health(): Promise<Health> {
-    return (await this.request("GET", "/api/v1/health", { auth: false })) as unknown as Health;
+    return (await this.request("GET", "/api/v2/health", { auth: false })) as unknown as Health;
   }
 }

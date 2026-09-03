@@ -3,6 +3,32 @@
 All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/).
 
+## [2.0.0] - 2026-09-03
+
+Targets API v2 (`/api/v2`). v1 is deprecated server-side with a twelve-month
+window, so 1.x keeps working until 2027-09-03; upgrade before then.
+
+### Breaking
+
+- Every request goes to `/api/v2/...`.
+- `APIError` gains `number` (stable integer code; the thousands digit is the
+  family, 5xxx = retry), `docs`, `retryWith`, `details`, and a `retryable`
+  getter. New subclasses: `NotFoundError` (404), `BatchTooLargeError` (400,
+  `details.max`), `UnprocessableInputError` (422, the whole 3xxx/4xxx family:
+  unsupported platform, no captions, private, live, and so on; `retryWith` is
+  set when a different request would work, e.g. `{ mode: "audio" }`).
+- `BatchResult`: `outcome` is exactly `"ok" | "processing" | "error"`; the
+  `reason` and `message` fields are replaced by `error` (an `ApiErrorBlock`,
+  the same shape a request-level error carries); `source` added on ok entries.
+- `TranscriptJob.error` is an `ApiErrorBlock` (code, number, message, docs,
+  retryWith, details) instead of `{ code, message }`.
+- The API no longer sends the `ai_fallback` block or a top-level `reason`; the
+  SDK never exposed them, so nothing to change unless you read the raw body.
+
+### Added
+
+- `Transcript.source`: `"captions"` or `"audio"`, where the words came from.
+
 ## [1.1.1] - 2026-08-28
 
 ### Changed

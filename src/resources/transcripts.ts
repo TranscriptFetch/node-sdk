@@ -16,12 +16,12 @@ import {
   type VideoList,
 } from "../models";
 
-const VIDEO = "/api/v1/transcripts/video";
-const CHANNEL = "/api/v1/transcripts/channel";
-const PLAYLIST = "/api/v1/transcripts/playlist";
-const SEARCH = "/api/v1/transcripts/search";
-const BATCH = "/api/v1/transcripts/batch";
-const JOBS = "/api/v1/transcripts/jobs";
+const VIDEO = "/api/v2/transcripts/video";
+const CHANNEL = "/api/v2/transcripts/channel";
+const PLAYLIST = "/api/v2/transcripts/playlist";
+const SEARCH = "/api/v2/transcripts/search";
+const BATCH = "/api/v2/transcripts/batch";
+const JOBS = "/api/v2/transcripts/jobs";
 
 /** Options for the paginated list endpoints (channel, playlist, search). */
 export interface ListOptions {

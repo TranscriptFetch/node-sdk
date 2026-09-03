@@ -26,17 +26,22 @@ export {
   APITimeoutError,
   AuthenticationError,
   InvalidRequestError,
+  BatchTooLargeError,
+  NotFoundError,
   InsufficientCreditsError,
   IdempotencyConflictError,
   RateLimitError,
+  UnprocessableInputError,
   UpstreamUnavailableError,
   InternalServerError,
+  type APIErrorInit,
 } from "./errors";
 
 export type {
   Usage,
   Segment,
   Transcript,
+  ApiErrorBlock,
   PodcastMeta,
   Video,
   VideoList,
