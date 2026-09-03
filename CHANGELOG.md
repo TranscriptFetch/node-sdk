@@ -5,8 +5,8 @@ All notable changes to this project are documented here. This project follows
 
 ## [2.0.0] - 2026-09-03
 
-Targets API v2 (`/api/v2`). v1 is deprecated server-side with a twelve-month
-window, so 1.x keeps working until 2027-09-03; upgrade before then.
+Targets API v2 (`/api/v2`). v1 stays supported alongside v2, so 1.x keeps
+working; upgrade when the new error block is useful to you.
 
 ### Breaking
 
