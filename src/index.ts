@@ -16,7 +16,7 @@
 
 export { TranscriptFetch, type RequestOptions } from "./client";
 export type { ClientOptions } from "./config";
-export type { ListOptions } from "./resources/transcripts";
+export type { ListOptions, SearchOptions } from "./resources/transcripts";
 export { VERSION } from "./version";
 
 export {
@@ -44,6 +44,8 @@ export type {
   ApiErrorBlock,
   PodcastMeta,
   Video,
+  VideoStats,
+  ListPlatform,
   VideoList,
   BatchResult,
   BatchResponse,

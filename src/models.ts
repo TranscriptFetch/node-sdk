@@ -77,19 +77,49 @@ export interface Transcript {
   pollUrl: string | null;
 }
 
-/** A video reference from a channel/playlist/search list (metadata only). */
+/** Engagement counts on a list row, where the source exposes them. */
+export interface VideoStats {
+  plays: number | null;
+}
+
+/**
+ * A video reference from a channel/playlist/search list (metadata only).
+ *
+ * `url` is accepted as-is by `transcripts.video()` and `batch()`, whatever
+ * the platform. The platform is not repeated per row: `VideoList.platform`
+ * says it.
+ */
 export interface Video {
   videoId: string;
+  /** Canonical URL of the item; pass it straight to `transcripts.video()`. */
+  url: string | null;
   title: string | null;
+  /**
+   * @deprecated The API stopped sending poster images on 2026-09-08 (callers
+   * list to fetch transcripts, not to render galleries). Always null on v2.
+   */
   thumbnailUrl: string | null;
   duration: number | null;
   channel: string | null;
+  /**
+   * ISO-8601 upload time. Exact for TikTok, Instagram and podcasts;
+   * approximate on YouTube, whose listings only say "2 days ago", so it is
+   * exact to the day for recent videos and up to a year off for old ones.
+   */
+  publishedAt: string | null;
+  stats: VideoStats | null;
 }
+
+/** Where a listing's rows come from. */
+export type ListPlatform = "youtube" | "tiktok" | "instagram" | "spotify" | "apple" | "rss";
 
 /** A paginated list of videos. */
 export interface VideoList {
   kind: "video_list";
+  /** Which listing produced the page: channel, playlist or search. */
   source: string;
+  /** The platform the rows came from (the `platform` option on search, detected from the URL on channel and playlist). */
+  platform: ListPlatform | null;
   videos: Video[];
   nextCursor: string | null;
   usage: Usage | null;
@@ -233,14 +263,24 @@ function normalizeUsage(env: Wire): Usage | null {
   };
 }
 
+const LIST_PLATFORMS: ReadonlySet<string> = new Set(["youtube", "tiktok", "instagram", "spotify", "apple", "rss"]);
+
+function normalizeStats(raw: unknown): VideoStats | null {
+  if (!raw || typeof raw !== "object") return null;
+  return { plays: numOrNull(pick(obj(raw), "plays")) };
+}
+
 function normalizeVideo(raw: unknown): Video {
   const v = obj(raw);
   return {
     videoId: str(pick(v, "videoId", "video_id")),
+    url: strOrNull(pick(v, "url")),
     title: strOrNull(pick(v, "title")),
     thumbnailUrl: strOrNull(pick(v, "thumbnailUrl", "thumbnail_url")),
     duration: numOrNull(pick(v, "duration")),
     channel: strOrNull(pick(v, "channel")),
+    publishedAt: strOrNull(pick(v, "publishedAt", "published_at")),
+    stats: normalizeStats(v.stats),
   };
 }
 
@@ -287,9 +327,11 @@ export function normalizeTranscript(env: Wire): Transcript {
 export function normalizeVideoList(env: Wire): VideoList {
   const d = obj(env.data);
   const videos = Array.isArray(d.videos) ? d.videos.map(normalizeVideo) : [];
+  const platform = str(pick(d, "platform"));
   return {
     kind: "video_list",
     source: str(pick(d, "source")),
+    platform: LIST_PLATFORMS.has(platform) ? (platform as ListPlatform) : null,
     videos,
     nextCursor: strOrNull(pick(d, "nextCursor", "next_cursor")),
     usage: normalizeUsage(env),

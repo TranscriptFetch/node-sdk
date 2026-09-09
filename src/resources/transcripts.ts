@@ -5,6 +5,7 @@
 
 import type { TranscriptFetch } from "../client";
 import {
+  type ListPlatform,
   normalizeBatch,
   normalizeJob,
   normalizeTranscript,
@@ -33,10 +34,21 @@ export interface ListOptions {
   idempotencyKey?: string;
 }
 
-function listBody(key: string, value: string, options: ListOptions): Record<string, unknown> {
+/** Options for {@link Transcripts.search}: a list page plus where to search. */
+export interface SearchOptions extends ListOptions {
+  /**
+   * Where to search. Defaults to YouTube. `rss` searches the open podcast
+   * index via Apple's directory and returns episode audio URLs. Every
+   * result's `url` is accepted by `video()` and `batch()` as-is.
+   */
+  platform?: ListPlatform;
+}
+
+function listBody(key: string, value: string, options: SearchOptions): Record<string, unknown> {
   const body: Record<string, unknown> = { [key]: value };
   if (options.limit != null) body["limit"] = options.limit;
   if (options.cursor != null) body["cursor"] = options.cursor;
+  if (options.platform != null) body["platform"] = options.platform;
   return body;
 }
 
@@ -85,8 +97,12 @@ export class Transcripts {
     return normalizeVideoList(env);
   }
 
-  /** Search YouTube and return matching videos (metadata only), one page. */
-  async search(query: string, options: ListOptions = {}): Promise<VideoList> {
+  /**
+   * Keyword search, one page of results (metadata only). YouTube by default;
+   * pass `platform` for TikTok, Instagram, Spotify, Apple Podcasts or the
+   * open podcast index (`rss`).
+   */
+  async search(query: string, options: SearchOptions = {}): Promise<VideoList> {
     const env = await this.client.request("POST", SEARCH, {
       body: listBody("query", query, options),
       idempotent: true,
@@ -160,8 +176,8 @@ export class Transcripts {
   }
 
   /** Iterate every search result, transparently following cursors. */
-  iterSearch(query: string, options: { limit?: number } = {}): AsyncGenerator<Video> {
-    return this.paginate((cursor) => this.search(query, { limit: options.limit, cursor }));
+  iterSearch(query: string, options: { limit?: number; platform?: ListPlatform } = {}): AsyncGenerator<Video> {
+    return this.paginate((cursor) => this.search(query, { limit: options.limit, platform: options.platform, cursor }));
   }
 
   private async *paginate(

@@ -3,7 +3,7 @@
 The official Node.js / TypeScript client for the [TranscriptFetch API](https://transcriptfetch.com). Fetch transcripts as clean, typed data, with built-in retries, idempotency, and a typed error hierarchy.
 
 - Transcripts from **YouTube, TikTok, Instagram, podcasts, and direct media file URLs**
-- YouTube channel, playlist, and search listing
+- Channel, playlist and search listing across YouTube, TikTok, Instagram, Spotify, Apple Podcasts and RSS
 - Typed responses (full TypeScript types, ESM + CommonJS)
 - Automatic retries on 429 and 5xx with backoff
 - Auto-generated idempotency keys on writes
@@ -59,8 +59,20 @@ const t = await tf.transcripts.video("https://open.spotify.com/episode/...");
 console.log(t.podcast?.show, "-", t.podcast?.episode);
 ```
 
-`channel()`, `playlist()`, and `search()` are YouTube-only concepts and take
-YouTube handles, IDs, and queries.
+`channel()` and `playlist()` take a YouTube, TikTok, Instagram, Spotify, Apple
+Podcasts or RSS URL (or a YouTube `@handle` / `PL…` id) and detect the platform
+from it. `search()` searches YouTube unless you pass `platform`:
+
+```ts
+const page = await tf.transcripts.search("lofi hip hop", { platform: "tiktok", limit: 10 });
+for (const v of page.videos) {
+  console.log(v.title, v.publishedAt, v.stats?.plays);
+  const t = await tf.transcripts.video(v.url!); // every row's url is accepted as-is
+}
+```
+
+Rows carry `videoId`, `url`, `title`, `channel`, `duration`, `publishedAt` and
+`stats` (`plays` where the source exposes it); the page carries `platform`.
 
 ## Sources without captions
 
@@ -102,9 +114,9 @@ const res = await tf.transcripts.batch(videoIds, { mode: "captions" });
 ```ts
 await tf.transcripts.video(video);                     // single transcript (text + segments)
 await tf.transcripts.batch(videoIds, { mode });        // up to 50 transcripts in one call
-await tf.transcripts.channel(channel, { limit, cursor });   // a YouTube channel's videos (metadata)
-await tf.transcripts.playlist(playlist, { limit, cursor }); // a YouTube playlist's videos
-await tf.transcripts.search(query, { limit, cursor });      // search YouTube
+await tf.transcripts.channel(channel, { limit, cursor });   // a channel's or creator's videos (metadata)
+await tf.transcripts.playlist(playlist, { limit, cursor }); // a playlist's videos
+await tf.transcripts.search(query, { platform, limit, cursor }); // keyword search, YouTube by default
 await tf.transcripts.job(jobId);                       // poll an async transcription job (free)
 await tf.me();                                         // validate the key, read the balance (free)
 await tf.health();                                     // unauthenticated liveness probe

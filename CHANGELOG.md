@@ -3,6 +3,26 @@
 All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/).
 
+## [2.1.0] - 2026-09-09
+
+### Added
+
+- `search(query, { platform })`: search TikTok, Instagram, Spotify, Apple
+  Podcasts or the open podcast index (`rss`) as well as YouTube (the default).
+  `iterSearch` takes the same option. `SearchOptions` and `ListPlatform` are
+  exported.
+- `Video.url`, `Video.publishedAt` and `Video.stats` (`plays`), matching the
+  rows the API now returns for every platform. `url` is accepted by `video()`
+  and `batch()` as-is.
+- `VideoList.platform`: where the page's rows came from.
+
+### Changed
+
+- `channel()` and `playlist()` accept TikTok, Instagram, Spotify, Apple
+  Podcasts and RSS URLs; the platform is detected from the URL.
+- `Video.thumbnailUrl` is deprecated and always `null`: the API stopped
+  sending poster images on 2026-09-08.
+
 ## [2.0.0] - 2026-09-03
 
 Targets API v2 (`/api/v2`). v1 stays supported alongside v2, so 1.x keeps
