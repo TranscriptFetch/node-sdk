@@ -3,6 +3,16 @@
 All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/).
 
+## [2.2.0] - 2026-09-10
+
+### Removed
+
+- Podcast support. The API no longer accepts Spotify, Apple Podcasts or RSS
+  feed inputs (they answer 422 `unsupported_platform`), so `PodcastMeta`,
+  `Transcript.podcast` and the `spotify` / `apple` / `rss` values of
+  `ListPlatform` are gone. Existing code that never touched podcasts is
+  unaffected.
+
 ## [2.1.0] - 2026-09-09
 
 ### Added

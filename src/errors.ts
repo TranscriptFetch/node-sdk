@@ -105,8 +105,8 @@ export class RateLimitError extends APIError {
 
 /**
  * 422: this input cannot be served, permanently (the 3xxx and 4xxx families):
- * an unsupported platform, the wrong endpoint for the platform, a podcast
- * with no public feed, a private or live video, no captions, no speech.
+ * an unsupported platform, the wrong endpoint for the platform, a private
+ * or live video, no captions, no speech.
  * `code` says which; `retryWith` is set when a different request would work
  * (e.g. `{ mode: "audio" }` to transcribe a captionless video).
  */

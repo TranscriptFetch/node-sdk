@@ -2,8 +2,8 @@
 
 The official Node.js / TypeScript client for the [TranscriptFetch API](https://transcriptfetch.com). Fetch transcripts as clean, typed data, with built-in retries, idempotency, and a typed error hierarchy.
 
-- Transcripts from **YouTube, TikTok, Instagram, podcasts, and direct media file URLs**
-- Channel, playlist and search listing across YouTube, TikTok, Instagram, Spotify, Apple Podcasts and RSS
+- Transcripts from **YouTube, TikTok, Instagram, and direct media file URLs**
+- Channel, playlist and search listing across YouTube, TikTok and Instagram
 - Typed responses (full TypeScript types, ESM + CommonJS)
 - Automatic retries on 429 and 5xx with backoff
 - Auto-generated idempotency keys on writes
@@ -45,22 +45,13 @@ Keep your key server-side. Never ship it to the browser.
 | YouTube URL or bare video ID | `https://youtu.be/aircAruvnKk`, `aircAruvnKk` |
 | TikTok video URL | `https://www.tiktok.com/@user/video/7137723462233555205` |
 | Instagram post or reel URL | `https://www.instagram.com/reel/Cxyz.../` |
-| Podcast episode or feed | `https://open.spotify.com/episode/...`, `https://podcasts.apple.com/...`, `https://feeds.example.com/show.xml` |
 | Direct media file URL | `https://example.com/talk.mp3` |
 
 The string is sent to the API as-is, so the SDK never has to be upgraded for the
 API to accept a new input.
 
-A podcast link is resolved to that episode's audio automatically, and the
-response carries a `podcast` block naming the show and episode:
-
-```ts
-const t = await tf.transcripts.video("https://open.spotify.com/episode/...");
-console.log(t.podcast?.show, "-", t.podcast?.episode);
-```
-
-`channel()` and `playlist()` take a YouTube, TikTok, Instagram, Spotify, Apple
-Podcasts or RSS URL (or a YouTube `@handle` / `PL…` id) and detect the platform
+`channel()` and `playlist()` take a YouTube, TikTok or Instagram URL (or a
+YouTube `@handle` / `PL…` id) and detect the platform
 from it. `search()` searches YouTube unless you pass `platform`:
 
 ```ts

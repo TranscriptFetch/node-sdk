@@ -37,9 +37,8 @@ export interface ListOptions {
 /** Options for {@link Transcripts.search}: a list page plus where to search. */
 export interface SearchOptions extends ListOptions {
   /**
-   * Where to search. Defaults to YouTube. `rss` searches the open podcast
-   * index via Apple's directory and returns episode audio URLs. Every
-   * result's `url` is accepted by `video()` and `batch()` as-is.
+   * Where to search. Defaults to YouTube. Every result's `url` is accepted
+   * by `video()` and `batch()` as-is.
    */
   platform?: ListPlatform;
 }
@@ -58,11 +57,9 @@ export class Transcripts {
   /**
    * Fetch a single transcript (text + timestamped segments).
    *
-   * Accepts a YouTube, TikTok or Instagram URL, a bare YouTube video ID, a
-   * direct media file URL, or a podcast link (Spotify, Apple Podcasts, or an
-   * RSS feed), which is resolved to that episode's audio and comes back with a
-   * `podcast` block. The string is passed through to the API untouched, so
-   * newly supported inputs work without an SDK upgrade.
+   * Accepts a YouTube, TikTok or Instagram URL, a bare YouTube video ID, or a
+   * direct media file URL. The string is passed through to the API untouched,
+   * so newly supported inputs work without an SDK upgrade.
    *
    * A source with no captions is transcribed from its audio, and the result
    * comes back as a job: `status` is "processing" and `jobId` is set, with no
@@ -99,8 +96,7 @@ export class Transcripts {
 
   /**
    * Keyword search, one page of results (metadata only). YouTube by default;
-   * pass `platform` for TikTok, Instagram, Spotify, Apple Podcasts or the
-   * open podcast index (`rss`).
+   * pass `platform` for TikTok or Instagram.
    */
   async search(query: string, options: SearchOptions = {}): Promise<VideoList> {
     const env = await this.client.request("POST", SEARCH, {

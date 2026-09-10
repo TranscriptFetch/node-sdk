@@ -20,28 +20,10 @@ export interface Segment {
   duration: number;
   text: string;
   /**
-   * Speaker id (0, 1, ...) from podcast speaker diarization. Present only on
-   * diarized podcast segments; ids are hints from voice separation, not named
-   * identification. Never set on other sources.
+   * Speaker id (0, 1, ...) from speaker diarization, when the API ran it. Ids
+   * are hints from voice separation, not named identification.
    */
   speaker?: number;
-}
-
-/**
- * The show and episode behind a podcast transcript.
- *
- * Present only when the input resolved to a podcast episode. A job polled back
- * later carries the short form (show + episode); the rest is filled in on the
- * response that did the resolving, so treat every field as optional.
- */
-export interface PodcastMeta {
-  show: string | null;
-  episode: string | null;
-  publishedAt: string | null;
-  feedUrl: string | null;
-  audioUrl: string | null;
-  /** How the link was matched to a feed, e.g. "rss" or "itunes_search". */
-  resolvedVia: string | null;
 }
 
 /**
@@ -58,15 +40,13 @@ export interface Transcript {
   /** transcript | transcript_job */
   kind: string;
   videoId: string;
-  /** Source platform: youtube | tiktok | instagram | podcast | file. */
+  /** Source platform: youtube | tiktok | instagram | file. */
   platform: string | null;
   title: string | null;
   /** Where the words came from: "captions" or "audio" (AI transcription). Null on a 202. */
   source: "captions" | "audio" | null;
   text: string | null;
   segments: Segment[];
-  /** Set only when the input resolved to a podcast episode. */
-  podcast: PodcastMeta | null;
   usage: Usage | null;
   // Envelope-level fields, lifted onto the model so an async job round-trips as
   // one object (the API returns them beside `data`, not inside it).
@@ -102,7 +82,7 @@ export interface Video {
   duration: number | null;
   channel: string | null;
   /**
-   * ISO-8601 upload time. Exact for TikTok, Instagram and podcasts;
+   * ISO-8601 upload time. Exact for TikTok and Instagram;
    * approximate on YouTube, whose listings only say "2 days ago", so it is
    * exact to the day for recent videos and up to a year off for old ones.
    */
@@ -111,7 +91,7 @@ export interface Video {
 }
 
 /** Where a listing's rows come from. */
-export type ListPlatform = "youtube" | "tiktok" | "instagram" | "spotify" | "apple" | "rss";
+export type ListPlatform = "youtube" | "tiktok" | "instagram";
 
 /** A paginated list of videos. */
 export interface VideoList {
@@ -263,7 +243,7 @@ function normalizeUsage(env: Wire): Usage | null {
   };
 }
 
-const LIST_PLATFORMS: ReadonlySet<string> = new Set(["youtube", "tiktok", "instagram", "spotify", "apple", "rss"]);
+const LIST_PLATFORMS: ReadonlySet<string> = new Set(["youtube", "tiktok", "instagram"]);
 
 function normalizeStats(raw: unknown): VideoStats | null {
   if (!raw || typeof raw !== "object") return null;
@@ -281,19 +261,6 @@ function normalizeVideo(raw: unknown): Video {
     channel: strOrNull(pick(v, "channel")),
     publishedAt: strOrNull(pick(v, "publishedAt", "published_at")),
     stats: normalizeStats(v.stats),
-  };
-}
-
-function normalizePodcast(raw: unknown): PodcastMeta | null {
-  if (!raw || typeof raw !== "object") return null;
-  const p = raw as Wire;
-  return {
-    show: strOrNull(pick(p, "show")),
-    episode: strOrNull(pick(p, "episode")),
-    publishedAt: strOrNull(pick(p, "publishedAt", "published_at")),
-    feedUrl: strOrNull(pick(p, "feedUrl", "feed_url")),
-    audioUrl: strOrNull(pick(p, "audioUrl", "audio_url")),
-    resolvedVia: strOrNull(pick(p, "resolvedVia", "resolved_via")),
   };
 }
 
@@ -315,7 +282,6 @@ export function normalizeTranscript(env: Wire): Transcript {
     source: normalizeSource(pick(d, "source")),
     text: strOrNull(pick(d, "text")),
     segments: normalizeSegments(d.segments),
-    podcast: normalizePodcast(d.podcast),
     usage: normalizeUsage(env),
     status: strOrNull(pick(env, "status")),
     jobId: strOrNull(pick(env, "jobId", "job_id")),
