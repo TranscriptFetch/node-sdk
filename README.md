@@ -34,6 +34,11 @@ for (const seg of t.segments) {
 console.log("credits left:", t.usage?.balance);
 ```
 
+Every transcript carries the same metadata whichever platform served it:
+`videoId`, `url`, `platform`, `title`, `channel` (the creator), `duration` in
+seconds, `language`, `thumbnailUrl` and `source` (`"captions"` or `"audio"`).
+A value the API could not determine is `null`, never missing.
+
 Keep your key server-side. Never ship it to the browser.
 
 ## Supported inputs

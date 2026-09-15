@@ -35,6 +35,11 @@ export interface Segment {
  * a literal: pinning it would make a perfectly good 202 look like a wrong
  * shape. When `status` is "processing", pass `jobId` to `transcripts.job()`
  * until it reports "completed".
+ *
+ * Every metadata field (`videoId`, `url`, `platform`, `title`, `channel`,
+ * `duration`, `language`, `thumbnailUrl`, `source`) is present on every
+ * transcript, whichever platform or path served it; null means the API could
+ * not determine it, never that it was left out. (API contract of 2026-09-15.)
  */
 export interface Transcript {
   /** transcript | transcript_job */
@@ -42,7 +47,25 @@ export interface Transcript {
   videoId: string;
   /** Source platform: youtube | tiktok | instagram | file. */
   platform: string | null;
+  /** Item title, or the post caption on TikTok and Instagram. */
   title: string | null;
+  /** Canonical URL of the item, when known. Accepted as-is by `transcripts.video()`. */
+  url: string | null;
+  /**
+   * The creator, as the platform names them: a YouTube channel name, a TikTok
+   * @handle, an Instagram username, the uploader for a file. Same field as
+   * the listing rows.
+   */
+  channel: string | null;
+  /** Media length in seconds, when the source reports it. */
+  duration: number | null;
+  /** The caption track's language code, or the language detected during AI transcription. */
+  language: string | null;
+  /**
+   * Poster image. TikTok and Instagram serve signed, expiring URLs, so copy
+   * the image rather than hotlinking it.
+   */
+  thumbnailUrl: string | null;
   /** Where the words came from: "captions" or "audio" (AI transcription). Null on a 202. */
   source: "captions" | "audio" | null;
   text: string | null;
@@ -123,7 +146,25 @@ export interface BatchResult {
   jobId: string | null;
   /** Path to poll for the finished transcript. Set alongside `jobId`. */
   pollUrl: string | null;
+  /** The transcript's metadata (same fields as {@link Transcript}) on outcome "ok"; null otherwise. */
   title: string | null;
+  /** Canonical URL of the item, when known. Accepted as-is by `transcripts.video()`. */
+  url: string | null;
+  /**
+   * The creator, as the platform names them: a YouTube channel name, a TikTok
+   * @handle, an Instagram username, the uploader for a file. Same field as
+   * the listing rows.
+   */
+  channel: string | null;
+  /** Media length in seconds, when the source reports it. */
+  duration: number | null;
+  /** The caption track's language code, or the language detected during AI transcription. */
+  language: string | null;
+  /**
+   * Poster image. TikTok and Instagram serve signed, expiring URLs, so copy
+   * the image rather than hotlinking it.
+   */
+  thumbnailUrl: string | null;
   /** "captions" or "audio" on outcome "ok". */
   source: "captions" | "audio" | null;
   text: string | null;
@@ -279,6 +320,11 @@ export function normalizeTranscript(env: Wire): Transcript {
     videoId: str(pick(d, "videoId", "video_id")),
     platform: strOrNull(pick(d, "platform")),
     title: strOrNull(pick(d, "title")),
+    url: strOrNull(pick(d, "url")),
+    channel: strOrNull(pick(d, "channel")),
+    duration: numOrNull(pick(d, "duration")),
+    language: strOrNull(pick(d, "language")),
+    thumbnailUrl: strOrNull(pick(d, "thumbnailUrl", "thumbnail_url")),
     source: normalizeSource(pick(d, "source")),
     text: strOrNull(pick(d, "text")),
     segments: normalizeSegments(d.segments),
@@ -359,6 +405,11 @@ export function normalizeBatch(env: Wire): BatchResponse {
       jobId: strOrNull(pick(r, "jobId", "job_id")),
       pollUrl: strOrNull(pick(r, "pollUrl", "poll_url")),
       title: strOrNull(pick(r, "title")),
+      url: strOrNull(pick(r, "url")),
+      channel: strOrNull(pick(r, "channel")),
+      duration: numOrNull(pick(r, "duration")),
+      language: strOrNull(pick(r, "language")),
+      thumbnailUrl: strOrNull(pick(r, "thumbnailUrl", "thumbnail_url")),
       source: normalizeSource(pick(r, "source")),
       text: strOrNull(pick(r, "text")),
       segments: Array.isArray(segments) ? normalizeSegments(segments) : null,

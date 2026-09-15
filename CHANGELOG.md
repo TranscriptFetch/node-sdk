@@ -3,6 +3,19 @@
 All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/).
 
+## [2.3.0] - 2026-09-15
+
+### Added
+
+- `Transcript.url`, `channel`, `duration`, `language` and `thumbnailUrl`, and
+  the same five on `BatchResult`. The API now returns one metadata block on
+  every transcript, whichever platform or path served it (a fresh caption
+  fetch, a cache hit, an AI transcription, a job poll, a webhook): every key
+  is always present and null means unknown. `channel` is the creator as the
+  platform names them (channel name, TikTok @handle, Instagram username);
+  `language` is the caption track's code or the language AI transcription
+  detected. No breaking changes.
+
 ## [2.2.0] - 2026-09-10
 
 ### Removed
