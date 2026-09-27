@@ -24,6 +24,13 @@ const SEARCH = "/api/v2/transcripts/search";
 const BATCH = "/api/v2/transcripts/batch";
 const JOBS = "/api/v2/transcripts/jobs";
 
+export interface VideoOptions {
+  mode?: "auto" | "captions" | "audio";
+  timestamps?: boolean;
+  callbackUrl?: string;
+  idempotencyKey?: string;
+}
+
 /** Options for the paginated list endpoints (channel, playlist, search). */
 export interface ListOptions {
   /** Page size. */
@@ -65,9 +72,9 @@ export class Transcripts {
    * comes back as a job: `status` is "processing" and `jobId` is set, with no
    * text yet. Poll {@link job} with that id until it reports "completed".
    */
-  async video(video: string, options: { idempotencyKey?: string } = {}): Promise<Transcript> {
+  async video(video: string, options: VideoOptions = {}): Promise<Transcript> {
     const env = await this.client.request("POST", VIDEO, {
-      body: { video },
+      body: { video, mode: options.mode, timestamps: options.timestamps, callback_url: options.callbackUrl },
       idempotent: true,
       idempotencyKey: options.idempotencyKey,
     });

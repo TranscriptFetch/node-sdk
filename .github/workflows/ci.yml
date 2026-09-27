@@ -18,4 +18,4 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - run: npm install
       - run: npm run typecheck
-      - run: npm run build
+      - run: npm test

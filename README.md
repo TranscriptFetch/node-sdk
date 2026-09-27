@@ -118,6 +118,58 @@ await tf.me();                                         // validate the key, read
 await tf.health();                                     // unauthenticated liveness probe
 ```
 
+## Monitors (2.4.0+)
+
+Watch a YouTube channel or a TikTok/Instagram profile for new videos. Creating
+one records a free baseline and starts scheduled checks; existing videos are
+skipped. Checks with no new videos are free. A check finding videos costs
+1 credit, plus transcript charges when enabled. See [monitor docs](https://transcriptfetch.com/docs/monitors)
+for plan limits, audio billing, retention and webhook verification.
+
+```ts
+const tf = new TranscriptFetch({ timeout: 120_000 });
+const monitor = await tf.monitors.create("@lexfridman", {
+  intervalMinutes: 60,
+  transcripts: true,
+  // webhookUrl: "https://your-app.com/hooks/transcriptfetch", // optional
+  // tab: "shorts", // YouTube only: videos (default), shorts, live
+});
+// Save monitor.webhookSecret securely: it is only returned on creation.
+
+const all = await tf.monitors.list();
+const news = await tf.monitors.list({ since: all.lastEventId ?? undefined });
+const current = await tf.monitors.get(monitor.id);
+const page = await tf.monitors.events(monitor.id, { limit: 10 });
+for await (const event of tf.monitors.iterEvents(monitor.id, { since: current.lastEventId ?? undefined })) {
+  console.log(event.type, event.data);
+}
+await tf.monitors.update(monitor.id, { status: "paused" });
+await tf.monitors.update(monitor.id, { webhookUrl: null, name: null, transcripts: false });
+// Omitted settings stay unchanged. null clears webhookUrl/name.
+await tf.monitors.update(monitor.id, { status: "active" });
+const check = await tf.monitors.check(monitor.id); // may spend credits
+if (check.error) console.error(check.error); // listing failure, even with HTTP 200
+await tf.monitors.delete(monitor.id); // removes events too
+```
+
+All SDK result fields use camelCase, including `nextCursor`, `hasNew`,
+`videosEventId` and `webhookSecret`. `monitor.videos` events contain `data.videos`
+and optional `data.transcripts`; each transcript outcome is `ok`, `processing`
+or `error`. `monitor.transcript` events carry the completed or failed follow-up
+in `data`, linked by `videosEventId`. `delivery` describes webhook attempts.
+Reading events never marks them read: persist the latest event id and pass it
+as `since`. `iterEvents` follows cursor pages while retaining that lower bound.
+Create/check accept `idempotencyKey`; the generated key stays stable on retries.
+Use a longer client timeout for creation or manual checks, which read the platform.
+
+Single-video options are also supported:
+
+```ts
+const transcript = await tf.transcripts.video("dQw4w9WgXcQ", {
+  mode: "captions", timestamps: false,
+});
+```
+
 ## Pagination
 
 Skip cursor bookkeeping with the auto-paginating iterators:

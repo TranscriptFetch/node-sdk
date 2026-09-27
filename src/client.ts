@@ -3,6 +3,7 @@
 import { resolveConfig, type ClientOptions, type ResolvedConfig } from "./config";
 import { APIConnectionError, APITimeoutError } from "./errors";
 import { normalizeMe, type Health, type Me } from "./models";
+import { Monitors } from "./resources/monitors";
 import { Transcripts } from "./resources/transcripts";
 import { backoffMs, buildHeaders, isRetryable, newIdempotencyKey, parseEnvelope } from "./transport";
 
@@ -33,6 +34,7 @@ const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout
 export class TranscriptFetch {
   /** The transcripts resource: video, batch, channel, playlist, search, job. */
   readonly transcripts: Transcripts;
+  readonly monitors: Monitors;
   private readonly config: ResolvedConfig;
 
   constructor(apiKey?: string, options?: ClientOptions);
@@ -44,6 +46,7 @@ export class TranscriptFetch {
         : (apiKeyOrOptions ?? {});
     this.config = resolveConfig(opts);
     this.transcripts = new Transcripts(this);
+    this.monitors = new Monitors(this);
   }
 
   /** Low-level request with the shared retry loop. Resources call this. */

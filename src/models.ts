@@ -273,7 +273,7 @@ function normalizeSegments(raw: unknown): Segment[] {
   return Array.isArray(raw) ? raw.map(normalizeSegment) : [];
 }
 
-function normalizeUsage(env: Wire): Usage | null {
+export function normalizeUsage(env: Wire): Usage | null {
   const raw = env.usage;
   if (!raw || typeof raw !== "object") return null;
   const u = raw as Wire;
@@ -291,7 +291,7 @@ function normalizeStats(raw: unknown): VideoStats | null {
   return { plays: numOrNull(pick(obj(raw), "plays")) };
 }
 
-function normalizeVideo(raw: unknown): Video {
+export function normalizeVideo(raw: unknown): Video {
   const v = obj(raw);
   return {
     videoId: str(pick(v, "videoId", "video_id")),

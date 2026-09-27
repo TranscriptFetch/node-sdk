@@ -16,7 +16,7 @@
 
 export { TranscriptFetch, type RequestOptions } from "./client";
 export type { ClientOptions } from "./config";
-export type { ListOptions, SearchOptions } from "./resources/transcripts";
+export type { ListOptions, SearchOptions, VideoOptions } from "./resources/transcripts";
 export { VERSION } from "./version";
 
 export {
@@ -52,3 +52,6 @@ export type {
   Me,
   Health,
 } from "./models";
+
+export type { CreateMonitorOptions, UpdateMonitorOptions, MonitorEventsOptions } from "./resources/monitors";
+export type { Monitor, MonitorInterval, MonitorSnapshot, MonitorList, MonitorDeleted, MonitorDelivery, MonitorTranscriptResult, MonitorEvent, MonitorEventList, MonitorCheck } from "./monitor-models";
