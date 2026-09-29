@@ -25,10 +25,10 @@
   "homepage": "https://transcriptfetch.com/docs/node",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/TranscriptFetch/node-sdk.git"
+    "url": "git+https://github.com/TranscriptFetch/transcript-api-node.git"
   },
   "bugs": {
-    "url": "https://github.com/TranscriptFetch/node-sdk/issues"
+    "url": "https://github.com/TranscriptFetch/transcript-api-node/issues"
   },
   "type": "module",
   "main": "./dist/index.cjs",

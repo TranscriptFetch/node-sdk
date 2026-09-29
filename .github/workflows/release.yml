@@ -4,10 +4,10 @@ name: Release
 # (OIDC): no tokens stored, and npm attaches a provenance statement
 # automatically. Configure the trusted publisher on npmjs.com first
 # (package settings → Trusted Publisher → GitHub Actions, repo
-# TranscriptFetch/node-sdk, workflow release.yml):
+# TranscriptFetch/transcript-api-node, workflow release.yml):
 # https://docs.npmjs.com/trusted-publishers
 #
-# Mirrors python-sdk's release.yml so both SDKs ship the same way: push the
+# Mirrors transcript-api-python's release.yml so both SDKs ship the same way: push the
 # version bump, tag it v<version>, push the tag.
 
 on:

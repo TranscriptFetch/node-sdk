@@ -231,7 +231,7 @@ const tf = new TranscriptFetch({
 ## Links
 
 - API docs: https://transcriptfetch.com/docs
-- Python SDK: https://github.com/TranscriptFetch/python-sdk
+- Python SDK: https://github.com/TranscriptFetch/transcript-api-python
 
 ## Versioning
 
