@@ -121,10 +121,12 @@ await tf.health();                                     // unauthenticated livene
 ## Monitors (2.4.0+)
 
 Watch a YouTube channel or a TikTok/Instagram profile for new videos. Creating
-one records a free baseline and starts scheduled checks; existing videos are
-skipped. Checks with no new videos are free. A check finding videos costs
-1 credit, plus transcript charges when enabled. See [monitor docs](https://transcriptfetch.com/docs/monitors)
-for plan limits, audio billing, retention and webhook verification.
+one reads the target once to record what is already there (existing videos are
+skipped) and starts scheduled checks. Every check costs 1 credit whether or not
+it finds new videos, and so does that first read; caption transcripts cost 1
+credit more each when enabled. A check whose listing fails is free. See
+[monitor docs](https://transcriptfetch.com/docs/monitors) for plan limits, audio
+billing, retention and webhook verification.
 
 ```ts
 const tf = new TranscriptFetch({ timeout: 120_000 });
@@ -147,7 +149,7 @@ await tf.monitors.update(monitor.id, { status: "paused" });
 await tf.monitors.update(monitor.id, { webhookUrl: null, name: null, transcripts: false });
 // Omitted settings stay unchanged. null clears webhookUrl/name.
 await tf.monitors.update(monitor.id, { status: "active" });
-const check = await tf.monitors.check(monitor.id); // may spend credits
+const check = await tf.monitors.check(monitor.id); // 1 credit, found or not
 if (check.error) console.error(check.error); // listing failure, even with HTTP 200
 await tf.monitors.delete(monitor.id); // removes events too
 ```

@@ -55,8 +55,9 @@ function settings(options: UpdateMonitorOptions): Record<string, unknown> {
 export class Monitors {
   constructor(private readonly client: TranscriptFetch) {}
 
-  /** Create a scheduled monitor. Baseline is free; only later videos produce events.
-   * Save webhookSecret now: it is only returned on creation. */
+  /** Create a scheduled monitor. Creation reads the target once (1 credit) and skips the
+   * videos already there; only later videos produce events, and every later check costs
+   * 1 credit, found or not. Save webhookSecret now: it is only returned on creation. */
   async create(target: string, options: CreateMonitorOptions = {}): Promise<Monitor> {
     const body = { ...settings(options), target, type: options.type, platform: options.platform, tab: options.tab };
     return normalizeMonitor(await this.client.request("POST", BASE, {
@@ -85,7 +86,7 @@ export class Monitors {
     return env.data as MonitorDeleted;
   }
 
-  /** Check now (even when paused). New videos cost credits; inspect error for listing failures. */
+  /** Check now (even when paused): 1 credit, found or not; inspect error for listing failures. */
   async check(monitorId: string, options: { idempotencyKey?: string } = {}): Promise<MonitorCheck> {
     return normalizeMonitorCheck(await this.client.request("POST", `${path(monitorId)}/check`, {
       idempotent: true, idempotencyKey: options.idempotencyKey,
